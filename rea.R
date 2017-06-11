@@ -1,14 +1,22 @@
 # Main interface for running rea
 
-doc = 'Usage: rea.R <counts> <cols> [ -p <np> ]
+doc = 'Usage: rea.R <counts> <cols> [ -exp -p <np> ]
 
 options:
- -p <np>  Number of principle components'
+ -p <np>  Number of principle components
+ -exp     Calculate lambda on expressed genes'
 
 suppressPackageStartupMessages(library(docopt))
 opts = docopt(doc)
 
-print(opts)
+#print(opts)
+
+# Set R options
+options(digits=4)
+
+# Set constants
+quantiles  = c(0.5, 0.25, 0.1, 0.05, 0.01)
+df = 1
 
 # Set parameters
 counts.file = opts$counts
@@ -50,11 +58,24 @@ analyze = function (np) {
     #write.csv(as.data.frame(res), file=paste0(subdir, name, "_res.csv"))
 
     print(res)
+    cat("\n")
 
-    all.pvals = res$pvalue
-    all.padj = p.adjust(all.pvals, method="BH")
-    print(paste0("0.05    ", sum(all.padj <= 0.05, na.rm=TRUE), "    ", sum(res$padj <= 0.05, na.rm=TRUE)))
+    all.padj = p.adjust(res$pvalue, method="BH")
+    cat(paste0("0.05\t", sum(all.padj <= 0.05, na.rm=TRUE), "\t", sum(res$padj <= 0.05, na.rm=TRUE), "\n"))
 
+    # Compute inflation factors
+    exp.p = quantile(res$pvalue[!is.na(res$padj)], quantiles, na.rm=TRUE)
+    exp.chi = qchisq(1-exp.p, df)
+    exp.lambda = exp.chi / qchisq(1-quantiles, df)
+
+    all.p = quantile(res$pvalue, quantiles, na.rm=TRUE)
+    all.chi = qchisq(1-all.p, df)
+    all.lambda = all.chi / qchisq(1-quantiles, df)
+
+    cat(paste(quantiles, collapse="\t"), "\n")
+    cat(paste(exp.lambda, collapse="\t"), "\n")
+    cat(paste(all.lambda, collapse="\t"), "\n")
+    
     # Output metadata
     #write.table(sizeFactors(dds), file=paste0(subdir, name, "_sizes.txt"), sep="\t")
 
