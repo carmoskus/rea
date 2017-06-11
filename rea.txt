@@ -1,0 +1,6 @@
+rea (RNA-Seq Expression Analysis)
+
+Step 1: Have process that starts at 0 PCs and adds them to get inflation under control
+- first package = edgeR
+- lambda at 50th percentile of all genes
+- outputs as it goes
